@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "TweetService";
+
+package tweet;
+
+service Tweeter {
+  rpc GetTweetStream (google.protobuf.Empty) returns (stream TweetData);
+}
+
+message TweetData {
+  google.protobuf.Timestamp dateTimeStamp = 1;
+  int32 id = 2;
+  string message = 3;
+}
