@@ -22,7 +22,7 @@ namespace console
 
             try
             {
-                await foreach (var tweet in streamingCall.ResponseStream.ReadAllAsync(cancellationToken: cts.Token))
+                await foreach (var tweet in streamingCall.ResponseStream.ReadAllAsync(cancellationToken: cts.Token).ConfigureAwait(false))
                 {
                     Console.WriteLine($"{tweet.DateTimeStamp.ToDateTime():s} | {tweet.Id} | {tweet.Message}");
                 }
@@ -35,7 +35,7 @@ namespace console
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
 
-            await Task.CompletedTask;
+            cts.Cancel();
         }
     }
 }

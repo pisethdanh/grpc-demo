@@ -19,31 +19,31 @@ namespace TweetService
 
         public override async Task GetTweetStream(Empty _, IServerStreamWriter<TweetData> responseStream, ServerCallContext context)
         {
-            var now = DateTime.UtcNow;
-
-            await foreach (var tweet in GetTweetDataAsync(context.CancellationToken, now))
+            await foreach (var tweet in GetTweetDataAsync(context.CancellationToken).ConfigureAwait(false))
             {
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 _logger.LogInformation("Sending TweetData response");
-                await responseStream.WriteAsync(tweet);
+                await responseStream.WriteAsync(tweet).ConfigureAwait(false);
             }
         }
 
-        private async IAsyncEnumerable<TweetData> GetTweetDataAsync([EnumeratorCancellation] CancellationToken cancellationToken, DateTime now)
+        private async IAsyncEnumerable<TweetData> GetTweetDataAsync([EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            int days = 0;
             int max = 500;
             int id = 1;
+
+            var now = DateTime.UtcNow;
 
             while (id < max)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                id++;
                 yield return new TweetData
                 {
-                    DateTimeStamp = Timestamp.FromDateTime(now.AddDays(days++)),
-                    Id = id++,
+                    DateTimeStamp = Timestamp.FromDateTime(now.AddDays(id)),
+                    Id = id,
                     Message = "test"
                 };
             }

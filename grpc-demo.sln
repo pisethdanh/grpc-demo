@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TweetService", "server\TweetService\TweetService.csproj", "{A45FE91F-EDFB-4E5C-A868-390BEF6014B9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TweetService", "src\server\TweetService\TweetService.csproj", "{A45FE91F-EDFB-4E5C-A868-390BEF6014B9}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F4380ED6-75F2-4A40-9526-D4DB4EA8D5A3}"
 EndProject
@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "client", "client", "{9FB172
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A3D9ECC3-B525-4E00-8208-3903E687F091}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Console", "client\Console\Console.csproj", "{132D5613-DCDE-4E46-BFE4-17091A32027D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Console", "src\client\Console\Console.csproj", "{132D5613-DCDE-4E46-BFE4-17091A32027D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
