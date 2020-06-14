@@ -24,7 +24,9 @@ namespace console
             {
                 await foreach (var tweet in streamingCall.ResponseStream.ReadAllAsync(cancellationToken: cts.Token).ConfigureAwait(false))
                 {
-                    Console.WriteLine($"{tweet.DateTimeStamp.ToDateTime():s} | {tweet.Id} | {tweet.Message}");
+                    Console.WriteLine("Getting tweet ...");
+                    Console.WriteLine($"{tweet.Message}");
+                    Console.WriteLine();
                 }
             }
             catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)

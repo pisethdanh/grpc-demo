@@ -2,53 +2,117 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
+using Tweetinvi;
 
 namespace TweetService
 {
-    public class TweeterService : Tweeter.TweeterBase
+    public class TweeterService : Tweeter.TweeterBase, IDisposable
     {
         private readonly ILogger<TweeterService> _logger;
-        public TweeterService(ILogger<TweeterService> logger)
+        private readonly ITwitterClient _twitterClient;
+        private readonly BlockingCollection<TweetData> _tweets = new BlockingCollection<TweetData>();
+
+        public TweeterService(ILogger<TweeterService> logger, ITwitterClient twitterClient)
         {
             _logger = logger;
+            _twitterClient = twitterClient;
         }
 
         public override async Task GetTweetStream(Empty _, IServerStreamWriter<TweetData> responseStream, ServerCallContext context)
         {
-            await foreach (var tweet in GetTweetDataAsync(context.CancellationToken).ConfigureAwait(false))
-            {
-                context.CancellationToken.ThrowIfCancellationRequested();
+            var producer = ProduceTweets();
+            var consumer = ConsumeTweets(responseStream);
 
-                _logger.LogInformation("Sending TweetData response");
-                await responseStream.WriteAsync(tweet).ConfigureAwait(false);
-            }
+            await Task.WhenAll(producer, consumer);
         }
 
-        private async IAsyncEnumerable<TweetData> GetTweetDataAsync([EnumeratorCancellation] CancellationToken cancellationToken)
+        private Task ProduceTweets()
         {
-            int max = 500;
-            int id = 1;
-
-            var now = DateTime.UtcNow;
-
-            while (id < max)
+            return Task.Run(async () =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                int i = 0;
 
-                id++;
-                yield return new TweetData
+                var sampleStream = _twitterClient.Streams.CreateSampleStream();
+                sampleStream.TweetReceived += (sender, eventArgs) =>
                 {
-                    DateTimeStamp = Timestamp.FromDateTime(now.AddDays(id)),
-                    Id = id,
-                    Message = "test"
-                };
-            }
+                    var tweet = new TweetData { Id = i, Message = eventArgs.Tweet.Text };
+                    _tweets.Add(tweet);
 
-            await Task.CompletedTask.ConfigureAwait(false);
+                    if (++i == 20)
+                    {
+                        _tweets.CompleteAdding();
+                        sampleStream.Stop();
+                    }
+                };
+
+                await sampleStream.StartAsync().ConfigureAwait(false);
+            });
         }
+
+        private Task ConsumeTweets(IServerStreamWriter<TweetData> responseStream)
+        {
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    await foreach (var tweet in GetTweetAsync().ConfigureAwait(false))
+                    {
+                        await responseStream.WriteAsync(tweet).ConfigureAwait(false);
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    // An InvalidOperationException means that Take() was called on a completed collection
+                    Console.WriteLine("No more tweets!");
+                }
+            });
+        }
+
+        private async IAsyncEnumerable<TweetData> GetTweetAsync()
+        {
+            await Task.CompletedTask.ConfigureAwait(false);
+
+            while (true)
+                yield return _tweets.Take();
+        }
+
+
+        #region IDisposable
+
+        private bool _disposedValue;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposedValue)
+            {
+                if (disposing)
+                {
+                    _tweets.Dispose();
+                }
+
+                // free unmanaged resources (unmanaged objects) and override finalizer
+                // set large fields to null
+                _disposedValue = true;
+            }
+        }
+
+        // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+        // ~TweeterService()
+        // {
+        //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        //     Dispose(disposing: false);
+        // }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion IDisposable
     }
 }
